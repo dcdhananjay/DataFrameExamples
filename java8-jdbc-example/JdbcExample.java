@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -28,25 +29,46 @@ public class JdbcExample implements DriverAction {
             Driver driver = new org.postgresql.Driver();
             DriverAction da = new JdbcExample();
             DriverManager.registerDriver(driver, da);
-            Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5433/postgres", "postgres", "root");
+
+            String URL = "";
+            String username = "";
+            String password = "";
+            String tablename = "";
+
+            try {
+                String inputCredentials = args[0];
+                String[] inputCredArray = inputCredentials.split("#");
+                URL = inputCredArray[0];
+                username = inputCredArray[1];
+                password = inputCredArray[2];
+                tablename = inputCredArray[3];
+
+            } catch (ArrayIndexOutOfBoundsException e) {
+                System.out.println("Inputs not given properly.");
+                System.out.println("Required Format :: DBURL#DBUsername#DBPassword#DBTablename");
+                return;
+            }
+
+            Connection conn = DriverManager.getConnection("jdbc:postgresql://" + URL, username, password);
             if (conn != null) {
                 System.out.println("Connected to the database!");
 
-                String query = "Select * from person";
+                String query = "Select * from " + tablename;
+
                 PreparedStatement preparedStatement = conn.prepareStatement(query);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 List<Person> result = getList(resultSet);
 
-                List<Person> result2 = new ArrayList<>();
-
-                for (Person p : result) {
-                    if (p.getAge() > 20) {
-                        result2.add(p);
-                    }
-                }
-
+//                List<Person> result2 = new ArrayList<>();
+//
+//                for (Person p : result) {
+//                    if (p.getAge() > 20) {
+//                        result2.add(p);
+//                    }
+//                }
                 System.out.println("Records with age more than 20 years : ");
-                result2.forEach(x -> System.out.println(x));
+                result.stream().filter(p -> p.getAge() > 20).map(pm -> pm.toString()).forEach(System.out::println);
+                //result2.forEach(x -> System.out.println(x));
 
                 Map<String, Long> countByLname = result.stream()
                         .map(Person::getLname)
@@ -65,11 +87,15 @@ public class JdbcExample implements DriverAction {
 //                }
                 maxCount = (Collections.max(countByLname.values()));
 
-                for (Map.Entry<String, Long> entry : countByLname.entrySet()) {
-                    if (entry.getValue() == maxCount) {
-                        res = entry.getKey();
-                    }
-                }
+//                for (Map.Entry<String, Long> entry : countByLname.entrySet()) {
+//                    if (entry.getValue() == maxCount) {
+//                        res = entry.getKey();
+//                    }
+//                }
+                res = countByLname.entrySet().stream().
+                        max(Comparator.comparingLong(entry -> entry.getValue())).
+                        map(Map.Entry::getKey).
+                        orElse(null);
 
                 System.out.println("Max Group Size : ");
                 System.out.println("Last Name : " + res);
