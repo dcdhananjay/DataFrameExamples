@@ -8,12 +8,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 public class JdbcExample implements DriverAction {
@@ -59,47 +57,12 @@ public class JdbcExample implements DriverAction {
                 ResultSet resultSet = preparedStatement.executeQuery();
                 List<Person> result = getList(resultSet);
 
-//                List<Person> result2 = new ArrayList<>();
-//
-//                for (Person p : result) {
-//                    if (p.getAge() > 20) {
-//                        result2.add(p);
-//                    }
-//                }
-                System.out.println("Records with age more than 20 years : ");
-                result.stream().filter(p -> p.getAge() > 20).map(pm -> pm.toString()).forEach(System.out::println);
-                //result2.forEach(x -> System.out.println(x));
+                OptionalInt size = result.stream()
+                        .filter((p) -> p.getAge() > 20)
+                        .collect(Collectors.groupingBy(Person::getLname))
+                        .values().stream().mapToInt(Collection::size).max();
 
-                Map<String, Long> countByLname = result.stream()
-                        .map(Person::getLname)
-                        .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-                System.out.println("Group by Last name Result : " + countByLname);
-
-                Long maxCount = 0L;
-                String res = "";
-//
-//                for (Map.Entry<String, Long> entry : countByLname.entrySet()) {
-//                    if (entry.getValue() > maxCount) {
-//                        maxCount = (Long) entry.getValue();
-//                        res = (String) entry.getKey();
-//                    }
-//                }
-                maxCount = (Collections.max(countByLname.values()));
-
-//                for (Map.Entry<String, Long> entry : countByLname.entrySet()) {
-//                    if (entry.getValue() == maxCount) {
-//                        res = entry.getKey();
-//                    }
-//                }
-                res = countByLname.entrySet().stream().
-                        max(Comparator.comparingLong(entry -> entry.getValue())).
-                        map(Map.Entry::getKey).
-                        orElse(null);
-
-                System.out.println("Max Group Size : ");
-                System.out.println("Last Name : " + res);
-                System.out.println("Total Count : " + maxCount);
+                System.out.println("Answer is : " + size.getAsInt());
 
             } else {
                 System.out.println("Failed to make connection!");
@@ -131,6 +94,21 @@ public class JdbcExample implements DriverAction {
 
         }
         return result;
+    }
+
+    public static int getMaxSize(List<Person> result) {
+        try {
+            OptionalInt size = result.stream()
+                    .filter((p) -> p.getAge() > 20)
+                    .collect(Collectors.groupingBy(Person::getLname))
+                    .values().stream().mapToInt(Collection::size).max();
+
+            System.out.println("Answer is : " + size.getAsInt());
+            return size.getAsInt();
+        } catch (Exception e) {
+            System.out.println("Answer is : 0");
+            return 0;
+        }
     }
 
 }
