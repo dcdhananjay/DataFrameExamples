@@ -14,6 +14,8 @@ public class MessageReceiver {
     private String serverIP = "";
     private String serverPort = "";
 
+    private final String poisonString = "poison";
+
     private void consume() {
         Properties prop = new Properties();
         prop.put("bootstrap.servers", serverIP + ":" + serverPort);
@@ -24,14 +26,16 @@ public class MessageReceiver {
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(prop);
         consumer.subscribe(Arrays.asList(topic));
-        for (int i = 0; i < 1000; ++i) {
+        while (true) {
             ConsumerRecords<String, String> records = consumer.poll(1000L);
             System.out.println("size = " + records.count());
             for (ConsumerRecord<String, String> record : records) {
                 System.out.println("Received Message : " + record.value());
+                if (poisonString.equalsIgnoreCase(record.value())) {
+                    break;
+                }
             }
         }
-        System.out.println("End");
     }
 
     public static void main(String[] args) {
